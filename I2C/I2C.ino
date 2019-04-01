@@ -6,8 +6,11 @@
 #define SET_REGISTER 0xF6
 /* Address of the chip_ip register */
 #define CHIP_IP 0xD0
-/* Address of the temperature registers */
-#define TEMP_ADDRESS 0xFA
+/* Address of the sensor registers */
+#define FIRST_ADDRESS 0xF7
+/* Bytes of registers */
+#define BYTES_REGISTERS 8
+
 
 /* Single-pass function to configure the app */
 void setup()
@@ -19,59 +22,38 @@ void setup()
   Serial.begin(115200);
 }
 
-
-/* this function return the temperature from sensor BME 280*/
-uint16_t TemperatureRead();
 /* this function return the chip_id from sensor BME 280*/
 uint8_t ChipIdRead();
+/* this function read temperature, humidity and pressure from sensor BME 280*/
+void TempHumidPressRead(uint32_t temp, uint32_t humid, uint16_t pressure);
 
 /* Recurrent task, called forever */
 void loop()
 {
 
+  uint32_t temperature = 0;
+  uint32_t humidity = 0;
+  uint16_t pressure = 0;
+
   uint8_t chip_id = ChipIdRead();
-  uint16_t temp = TemperatureRead();
+  TempHumidPressRead(&temperature, &humidity, &pressure);
 
   /* Send data to console/monitor */
   Serial.printf("Chip id: %02X\n", chip_id);
-  Serial.printf("Temperature: %02X\n", temp);
 
   /* add a CRLF at the end*/
   Serial.println();
+
+  Serial.printf("Temperature: %02X\n", temperature);
+  Serial.printf("humidity: %02X\n", humidity);
+  Serial.printf("pressure: %02X\n", pressure);
+
 
   /* Ensure not to flood with a huge amount of fast data */
   delay(500);
 }
 
 
-
-uint16_t TemperatureRead(){
-
-  uint8_t msbyte = 0;
-  uint8_t lsbyte = 7;
-  
-  /* Prepare the reading of the temperature in BME 280 sensor  */
-  Wire.beginTransmission(BME_SENSOR); 
-  Wire.write(TEMP_ADDRESS);               
-  Wire.endTransmission();    
-
-  /* Request data from BME 280 */
-  Wire.requestFrom(BME_SENSOR, 2);
-
-  /* Wait for data to be available */
-  while (Wire.available())
-  {
-    /* Receive the more significant byte */
-    msbyte = Wire.read();
-    /* Receive the less significant byte */
-    lsbyte = Wire.read();
-
-  }
-  
-  /* join the two bytes */
-    return (msbyte << 8) | lsbyte;
-
-}
 
 
 uint8_t ChipIdRead(){
@@ -93,5 +75,33 @@ uint8_t ChipIdRead(){
 
   return c;
 
+}
 
+
+void TempHumidPressRead(uint32_t *temp, uint32_t *humid, uint16_t *pressure){
+
+  /* the values of the registers */
+  uint8_t registers[BYTES_REGISTERS];
+  uint8_t i = 0;
+  
+  /* Prepare the reading of the temperature in BME 280 sensor  */
+  Wire.beginTransmission(BME_SENSOR); 
+  Wire.write(FIRST_ADDRESS);               
+  Wire.endTransmission();    
+
+  /* Request data from BME 280 */
+  Wire.requestFrom(BME_SENSOR, BYTES_REGISTERS);
+
+  /* Wait for data to be available */
+  while (Wire.available())
+  {
+    /* Receive the bytes of registers from 0xF7 to 0xFE */
+    registers[i] = Wire.read();
+    i++;
+  }
+
+  *pressure = (registers[0] << 8) | registers[1];
+  *temp = (registers[2] << 12) | (registers[3] << 8) | registers[4];
+  *humid = (registers[5] << 12) | (registers[6] << 8) | registers[7];
+  
 }
