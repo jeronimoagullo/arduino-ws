@@ -10,6 +10,22 @@
 #define FIRST_ADDRESS 0xF7
 /* Bytes of registers */
 #define BYTES_REGISTERS 8
+/* Address of temperature and pressure cofig registers:
+ * osrs_t -> temprature (bits 7:5)
+ * osrs_p -> pressure (bits 4:2)
+ */
+#define CONFIG_OSRS_T_OSRS_P_ADDRESS 0xF4
+/* Address of humidity cofig registers:
+ * osrs_h -> temprature (bits 2:0)
+ */
+#define CONFIG_OSRS_H_ADDRESS 0xF2
+
+/* this function return the chip_id from sensor BME 280*/
+uint8_t ChipIdRead();
+/* this function read temperature, humidity and pressure from sensor BME 280*/
+void TempHumidPressRead(uint32_t temp, uint32_t humid, uint16_t pressure);
+/* this function initialize the sensor MBE 280 */
+void InitSensorMBE();
 
 
 /* Single-pass function to configure the app */
@@ -20,12 +36,10 @@ void setup()
 
   /* start serial for output */
   Serial.begin(115200);
-}
 
-/* this function return the chip_id from sensor BME 280*/
-uint8_t ChipIdRead();
-/* this function read temperature, humidity and pressure from sensor BME 280*/
-void TempHumidPressRead(uint32_t temp, uint32_t humid, uint16_t pressure);
+  /* Initilize the sensor MBE 280 */
+  InitSensorMBE();
+}
 
 /* Recurrent task, called forever */
 void loop()
@@ -41,13 +55,12 @@ void loop()
   /* Send data to console/monitor */
   Serial.printf("Chip id: %02X\n", chip_id);
 
-  /* add a CRLF at the end*/
-  Serial.println();
-
   Serial.printf("Temperature: %02X\n", temperature);
   Serial.printf("humidity: %02X\n", humidity);
   Serial.printf("pressure: %02X\n", pressure);
-
+  
+/* add a CRLF at the end*/
+  Serial.println();
 
   /* Ensure not to flood with a huge amount of fast data */
   delay(500);
@@ -105,3 +118,29 @@ void TempHumidPressRead(uint32_t *temp, uint32_t *humid, uint16_t *pressure){
   *humid = (registers[5] << 12) | (registers[6] << 8) | registers[7];
   
 }
+
+
+void InitSensorMBE(){
+
+  /* Preparing the writting of the humid config regisers in BME 280 sensor  */
+  Wire.beginTransmission(BME_SENSOR); 
+  /* temperature and pressure config registers */
+  Wire.write(CONFIG_OSRS_H_ADDRESS); 
+  /* write to get oversampling x1 in humidity
+   * in bytes -> 00000001
+   */
+  Wire.write(0x01);  
+  Wire.endTransmission(); 
+
+  /* Preparing the writting of the temp and pressure config regisers in BME 280 sensor  */
+  Wire.beginTransmission(BME_SENSOR); 
+  /* temperature and pressure config registers */
+  Wire.write(CONFIG_OSRS_T_OSRS_P_ADDRESS); 
+  /* write to get oversampling x1 in temp and pressure
+   * 2 LSB are normal mode
+   * in bytes -> 00100111
+   */
+  Wire.write(0x27);  
+  Wire.endTransmission(); 
+  
+  }
