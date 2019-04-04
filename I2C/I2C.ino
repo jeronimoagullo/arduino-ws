@@ -26,12 +26,6 @@ uint8_t ChipIdRead();
 void TempHumidPressRead(uint32_t *pressure, uint32_t *temp, uint16_t *humid);
 /* this function initialize the sensor MBE 280 */
 void InitSensorMBE();
-//
-///* Functions from BME datasheet */
-//double bme280_compensate_H_double(uint32_t adc_H);
-//double BME280_compensate_P_double(uint32_t adc_P);
-//double BME280_compensate_T_double(uint32_t adc_T);
-
 
 
 /* Single-pass function to configure the app */

@@ -30,6 +30,12 @@ void setup()
     /* Stop here (WDT will reset at some point) */
     while(1);
   }
+  
+  mybme.setTempOverSample(16); //0 to 16 are valid. 0 disables temp sensing. See table 24.
+  mybme.setPressureOverSample(16); //0 to 16 are valid. 0 disables pressure sensing. See table 23.
+  mybme.setHumidityOverSample(16); //0 to 16 are valid. 0 disables humidity sensing. See table 19.
+  
+  mybme.setMode(MODE_NORMAL); //MODE_SLEEP, MODE_FORCED, MODE_NORMAL is valid. See 3.3
 }
 
 /*
@@ -39,6 +45,18 @@ void loop()
 {
   /* Welcome message! Useful as a control point */
   Serial.printf("Ahoy! ESP8266 here!\n---\n");
+  float humid = mybme.readFloatHumidity();
+  float pressure = mybme.readFloatPressure();
+  float altitude = mybme.readFloatAltitudeMeters();
+  float temp = mybme.readTempC();
+
+  Serial.printf("Humidity: %.2f\n",humid);
+
+  Serial.printf(" Pressure: %.2f\n",pressure);
+
+  Serial.printf(" Alt: %.2f\n",altitude);
+
+  Serial.printf("Temp: %.2f\n", temp);
 
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    *  Ask for the data and print to console here !!
